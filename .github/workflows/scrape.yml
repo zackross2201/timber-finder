@@ -27,14 +27,9 @@ jobs:
           playwright install chromium --with-deps
 
       - name: Run Scraper
+        env:
+          FB_COOKIES: ${{ secrets.FB_COOKIES }}
         run: python scrape.py
-
-      - name: Upload Debug Screenshot
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-screenshot
-          path: debug_facebook.png
 
       - name: Commit Updated Listings
         run: |
