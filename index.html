@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Timber Finder</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-width: 1000px; margin: 0 auto; }
+    .card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); display: flex; flex-direction: column; }
+    .card img { width: 100%; height: 180px; object-fit: cover; background: #e5e5ea; }
+    .content { padding: 14px; flex-grow: 1; display: flex; flex-direction: column; }
+    .price { font-size: 20px; font-weight: bold; color: #1c1c1e; }
+    .title { font-size: 16px; margin: 6px 0; color: #3a3a3c; }
+    .location { font-size: 14px; color: #8e8e93; margin-bottom: 12px; }
+    .btn { background: #007aff; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: auto; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; }
+    .modal-box { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 340px; text-align: center; }
+    .modal-btn { display: block; width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .btn-blue { background: #007aff; color: white; }
+    .btn-green { background: #34c759; color: white; }
+    .btn-cancel { background: #e5e5ea; color: #1c1c1e; }
+  </style>
+</head>
+<body>
+
+  <h1>Local Timber & Sheds</h1>
+  <div class="grid" id="items">Loading listings...</div>
+
+  <div id="shareModal" class="modal">
+    <div class="modal-box">
+      <h3>Send to Mum</h3>
+      <button class="modal-btn btn-blue" onclick="sendMsg()">💬 iMessage</button>
+      <button class="modal-btn btn-green" onclick="sendMail()">✉️ Email</button>
+      <button class="modal-btn btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const MUM_PHONE = "+447123456789"; 
+    const MUM_EMAIL = "mum@example.co.uk";
+    let activeUrl = "";
+
+    fetch('./listings.json')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('items');
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = "<p>No listings found yet. Scraper runs shortly!</p>";
+          return;
+        }
+        container.innerHTML = data.items.map(item => `
+          <div class="card">
+            ${item.image ? `<img src="${item.image}" alt="" />` : `<div style="height:180px;background:#e5e5ea;"></div>`}
+            <div class="content">
+              <div class="price">${item.price}</div>
+              <div class="title">${item.title}</div>
+              <div class="location">${item.location}</div>
+              <button class="btn" onclick="openShare('${item.url}')">Send to Mum 📤</button>
+            </div>
+          </div>
+        `).join('');
+      })
+      .catch(() => {
+        document.getElementById('items').innerHTML = "<p>First run pending. Click 'Run workflow' in GitHub to populate!</p>";
+      });
+
+    function openShare(url) {
+      activeUrl = url;
+      document.getElementById('shareModal').style.display = 'flex';
+    }
+    function closeModal() {
+      document.getElementById('shareModal').style.display = 'none';
+    }
+    function sendMsg() {
+      closeModal();
+      window.location.href = `sms:${MUM_PHONE}&body=${encodeURIComponent("Check this on Marketplace: " + activeUrl)}`;
+    }
+    function sendMail() {
+      closeModal();
+      window.location.href = `mailto:${MUM_EMAIL}?subject=${encodeURIComponent("Marketplace Item")}&body=${encodeURIComponent(activeUrl)}`;
+    }
+  </script>
+</body>
+</html>
