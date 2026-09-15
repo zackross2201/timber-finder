@@ -6,19 +6,110 @@
   <title>Timber Finder</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <style>
-    body { font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; padding: 20px; }
-    h1 { text-align: center; margin-bottom: 20px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-width: 1000px; margin: 0 auto; }
-    .card { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); display: flex; flex-direction: column; }
-    .card img { width: 100%; height: 180px; object-fit: cover; background: #e5e5ea; }
-    .content { padding: 14px; flex-grow: 1; display: flex; flex-direction: column; }
-    .price { font-size: 20px; font-weight: bold; color: #1c1c1e; }
-    .title { font-size: 16px; margin: 6px 0; color: #3a3a3c; }
-    .location { font-size: 14px; color: #8e8e93; margin-bottom: 12px; }
-    .btn { background: #007aff; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: auto; }
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; }
-    .modal-box { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 340px; text-align: center; }
-    .modal-btn { display: block; width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f2f2f7;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1000px;
+      margin: 0 auto 20px auto;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .settings-link {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: #e5e5ea;
+    }
+    .content {
+      padding: 14px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .price {
+      font-size: 20px;
+      font-weight: bold;
+      color: #1c1c1e;
+    }
+    .title {
+      font-size: 16px;
+      margin: 6px 0;
+      color: #3a3a3c;
+    }
+    .location {
+      font-size: 14px;
+      color: #8e8e93;
+      margin-bottom: 12px;
+    }
+    .btn {
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: auto;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-box {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      width: 85%;
+      max-width: 340px;
+      text-align: center;
+    }
+    .modal-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
     .btn-blue { background: #007aff; color: white; }
     .btn-green { background: #34c759; color: white; }
     .btn-cancel { background: #e5e5ea; color: #1c1c1e; }
@@ -26,9 +117,14 @@
 </head>
 <body>
 
-  <h1>Local Timber & Sheds</h1>
+  <header>
+    <h1>Local Timber & Sheds</h1>
+    <button class="settings-link" onclick="updateContactSettings()" title="Settings">⚙️</button>
+  </header>
+
   <div class="grid" id="items">Loading listings...</div>
 
+  <!-- Share Selection Popup -->
   <div id="shareModal" class="modal">
     <div class="modal-box">
       <h3>Send to Mum</h3>
@@ -39,10 +135,9 @@
   </div>
 
   <script>
-    const MUM_PHONE = "+447123456789"; 
-    const MUM_EMAIL = "mum@example.co.uk";
     let activeUrl = "";
 
+    // 1. Fetch listings output from GitHub Actions
     fetch('./listings.json')
       .then(res => res.json())
       .then(data => {
@@ -67,20 +162,61 @@
         document.getElementById('items').innerHTML = "<p>First run pending. Click 'Run workflow' in GitHub to populate!</p>";
       });
 
+    // 2. Open / Close Share Menu
     function openShare(url) {
       activeUrl = url;
       document.getElementById('shareModal').style.display = 'flex';
     }
+
     function closeModal() {
       document.getElementById('shareModal').style.display = 'none';
     }
+
+    // 3. Prompt setup saved ONLY on the iPad's localStorage
+    function getOrPromptMumPhone() {
+      let phone = localStorage.getItem("mum_phone");
+      if (!phone) {
+        phone = prompt("Enter Mum's mobile number for iMessage (saved only on this device):", "+44");
+        if (phone) localStorage.setItem("mum_phone", phone.trim());
+      }
+      return phone || "";
+    }
+
+    function getOrPromptMumEmail() {
+      let email = localStorage.getItem("mum_email");
+      if (!email) {
+        email = prompt("Enter Mum's email address (saved only on this device):", "");
+        if (email) localStorage.setItem("mum_email", email.trim());
+      }
+      return email || "";
+    }
+
+    // 4. Send triggers
     function sendMsg() {
       closeModal();
-      window.location.href = `sms:${MUM_PHONE}&body=${encodeURIComponent("Check this on Marketplace: " + activeUrl)}`;
+      const phone = getOrPromptMumPhone();
+      const body = encodeURIComponent("Check this on Marketplace: " + activeUrl);
+      window.location.href = `sms:${phone}&body=${body}`;
     }
+
     function sendMail() {
       closeModal();
-      window.location.href = `mailto:${MUM_EMAIL}?subject=${encodeURIComponent("Marketplace Item")}&body=${encodeURIComponent(activeUrl)}`;
+      const email = getOrPromptMumEmail();
+      const subject = encodeURIComponent("Marketplace Item");
+      const body = encodeURIComponent("Check this listing:\n\n" + activeUrl);
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    }
+
+    // 5. Gear icon to change contact info later
+    function updateContactSettings() {
+      const currentPhone = localStorage.getItem("mum_phone") || "+44";
+      const currentEmail = localStorage.getItem("mum_email") || "";
+
+      const newPhone = prompt("Update Mum's phone number:", currentPhone);
+      if (newPhone !== null) localStorage.setItem("mum_phone", newPhone.trim());
+
+      const newEmail = prompt("Update Mum's email:", currentEmail);
+      if (newEmail !== null) localStorage.setItem("mum_email", newEmail.trim());
     }
   </script>
 </body>
